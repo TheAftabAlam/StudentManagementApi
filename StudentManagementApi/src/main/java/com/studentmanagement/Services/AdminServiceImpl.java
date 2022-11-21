@@ -4,10 +4,12 @@ package com.studentmanagement.Services;
 
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.studentmanagement.Exception.AdminException;
 import com.studentmanagement.entity.Address;
 import com.studentmanagement.entity.Admin;
 import com.studentmanagement.entity.Course;
@@ -38,12 +40,12 @@ public class AdminServiceImpl implements AdminService{
 	
 
 	@Override
-	public String SignUp(Admin admin) throws Exception {
+	public String SignUp(Admin admin) throws AdminException {
 		
 		Admin existAdmin= adminDao.findByadminEmail(admin.getAdminEmail());
 		if(existAdmin!=null)
 		{
-			throw new Exception("Admin already exist!");
+			throw new AdminException("Admin already exist!");
 		}
 		else
 		{
@@ -58,10 +60,10 @@ public class AdminServiceImpl implements AdminService{
 
 
 	@Override
-	public Student addStudent(Student student, String key) throws Exception {
+	public Student addStudent(Student student, String key) throws AdminException {
 		CurrentAdminSession currentAdminSession= sessionDao.findByuuid(key);
 		if(currentAdminSession==null)
-			throw new Exception("Admin login first");
+			throw new AdminException("Admin login first");
 		List<Address> addresses=student.getAddress();
 		for(Address address : addresses)
 			address.setStudent(student);
@@ -75,10 +77,10 @@ public class AdminServiceImpl implements AdminService{
 
 
 	@Override
-	public Course addCourse(Course course, String key) throws Exception {
+	public Course addCourse(Course course, String key) throws AdminException {
 		CurrentAdminSession currentAdminSession= sessionDao.findByuuid(key);
 		if(currentAdminSession==null)
-			throw new Exception("Admin login first");
+			throw new AdminException("Admin login first");
 		List<Student> students= course.getStudents();
 		for(Student student:students)
 			student.getCourses().add(course);
@@ -89,33 +91,56 @@ public class AdminServiceImpl implements AdminService{
 
 
 	@Override
-	public Student assignCourse(String courseName, String studentName,String key) throws Exception {
+	public Course assignCourse(Integer courseId,Integer studentId,String key) throws AdminException {
 		
 		CurrentAdminSession currentAdminSession= sessionDao.findByuuid(key);
 		if(currentAdminSession==null)
-			throw new Exception("Admin login first");
+			throw new AdminException("Admin login first");
 		
 		
-		Course course= courseDao.findBycourseName(courseName);
-		if(course==null)
-			throw new Exception("Course not registered with this name");
-		Student student =studentDao.findBystudentName(studentName);
-		if(student==null)
-			throw new Exception("Student not registered with this name");
-		List<Course> courses=student.getCourses();
+		Optional<Course> courseoOptional= courseDao.findById(courseId);
+		if(!courseoOptional.isPresent())
+			throw new AdminException("Course not registered with this name");
+		Optional<Student> studentoOptional =studentDao.findById(studentId);
+		if(!studentoOptional.isPresent())
+			throw new AdminException("Student not registered with this name");
+		Course course=courseoOptional.get();
+		Student student=studentoOptional.get();
 		
-		for(Course course2:courses)
-			course2.getStudents().add(student);
-		courseDao.save(course);
-		
-//		
-//		List<Student> students=course.getStudents();
-//		for(Student st:students)
-//			st.getCourses().add(course);
-//		
+		course.getStudents().add(student);
+		student.getCourses().add(course);
 		studentDao.save(student);
-//		
-		return student;
+		
+		return course;
+	}
+
+
+
+
+	@Override
+	public List<Student> getStudentByName(String name,String key) throws AdminException {
+
+		CurrentAdminSession currentAdminSession= sessionDao.findByuuid(key);
+		if(currentAdminSession==null)
+			throw new AdminException("Admin login first");
+		List<Student> students= studentDao.findBystudentName(name);
+		if(students.size()==0)
+			throw new AdminException("List is empty");
+		return students;
+	}
+
+
+
+
+	@Override
+	public List<Student> getStudentByCourseName(String courseName, String key) throws AdminException {
+		CurrentAdminSession currentAdminSession= sessionDao.findByuuid(key);
+		if(currentAdminSession==null)
+			throw new AdminException("Admin login first");
+		Course course= courseDao.findBycourseName(courseName);
+		
+		return course.getStudents();
+		
 	}
 
 	

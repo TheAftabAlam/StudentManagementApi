@@ -13,6 +13,7 @@ import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Data;
 import net.bytebuddy.utility.RandomString;
@@ -33,6 +34,7 @@ public class Student {
 	private List<Address> address=new ArrayList<>();
 	
 	@ManyToMany(cascade = CascadeType.ALL,mappedBy = "students")
+	@JsonIgnore
 	private List<Course> courses=new ArrayList<>();
 
 }
